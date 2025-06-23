@@ -1,5 +1,6 @@
+import getCssSelector from "css-selector-generator";
+
 const defaultSelectors = [
-  '.ads',
   '[id*="sponsor"]',
   'iframe[src*="ads"]'
 ];
@@ -22,6 +23,61 @@ function blockRedirectEvents() {
     });
   }
 }
+
+let lastRightClickElement: HTMLElement | null = null;
+
+document.addEventListener("contextmenu", (e) => {
+  lastRightClickElement = e.target as HTMLElement;
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "CONTEXT_BLOCK_REQUEST" && lastRightClickElement) {
+    const selector = getCssSelector(lastRightClickElement);
+    const hostname = location.hostname;
+
+    chrome.storage.local.get(["selectors"], (res) => {
+      const all = res.selectors ?? {};
+      const hostSelectors: string[] = all[hostname] ?? [];
+
+      if (!hostSelectors.includes(selector)) {
+        hostSelectors.push(selector);
+
+        chrome.storage.local.set({
+          selectors: {
+            ...all,
+            [hostname]: hostSelectors
+          }
+        });
+      }
+
+      lastRightClickElement?.remove();
+    });
+  }
+});
+
+chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+  if (msg.type === "CONTEXT_BLOCK_REQUEST" && lastRightClickElement) {
+    const selector = getCssSelector(lastRightClickElement);
+    const hostname = location.hostname;
+
+    chrome.storage.local.get(["selectors"], (res) => {
+      const current = res.selectors ?? {};
+      const hostSelectors = current[hostname] ?? [];
+      if (!hostSelectors.includes(selector)) {
+        hostSelectors.push(selector);
+      }
+
+      chrome.storage.local.set({
+        selectors: {
+          ...current,
+          [hostname]: hostSelectors
+        }
+      });
+
+      lastRightClickElement?.remove();
+    });
+  }
+});
 
 function runBlocker(userSelectors: string[]) {
   const allSelectors = [...defaultSelectors, ...userSelectors];

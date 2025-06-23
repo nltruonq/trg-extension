@@ -24,6 +24,7 @@
 		"type": "module"
 	},
 	"permissions": [
+    "contextMenus",
 		"background",
 		"tabs",
 		"storage"
