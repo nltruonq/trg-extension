@@ -15,15 +15,6 @@ function removeElements(selectors: string[]) {
   }
 }
 
-function blockRedirectEvents() {
-  const attrs = ['onclick', 'onmousedown'];
-  for (const attr of attrs) {
-    document.querySelectorAll(`[${attr}]`).forEach(el => {
-      el.removeAttribute(attr);
-    });
-  }
-}
-
 let lastRightClickElement: HTMLElement | null = null;
 
 document.addEventListener("contextmenu", (e) => {
@@ -84,7 +75,6 @@ function runBlocker(userSelectors: string[]) {
 
   const executeAll = () => {
     removeElements(allSelectors);
-    blockRedirectEvents();
   };
 
   executeAll();
