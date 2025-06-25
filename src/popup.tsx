@@ -1,4 +1,4 @@
-import { ShieldCheck, ShieldX, X } from "lucide-react";
+import { ShieldAlert, ShieldCheck, ShieldX, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Button } from "./components/ui/button";
@@ -8,15 +8,19 @@ import { ScrollArea } from "./components/ui/scroll-area";
 
 function Popup() {
   const [enabledDomains, setEnabledDomains] = useState<Record<string, boolean>>({});
+  const [popupBlockMap, setPopupBlockMap] = useState<Record<string, boolean>>({});
   const [enabled, setEnabled] = useState(true);
+  const [popupBlocked, setPopupBlocked] = useState(false);
   const [hostname, setHostname] = useState<string>("");
   const [input, setInput] = useState("");
   const [selectors, setSelectors] = useState<string[]>([]);
 
   useEffect(() => {
-    chrome.storage.local.get(["enabledDomains", "selectors"], (res) => {
+    chrome.storage.local.get(["enabledDomains", "selectors", "popupBlockMap"], (res) => {
       const ed = res.enabledDomains ?? {};
+      const pb = res.popupBlockMap ?? {};
       setEnabledDomains(ed);
+      setPopupBlockMap(pb);
 
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const url = tabs[0]?.url ?? "";
@@ -24,6 +28,7 @@ function Popup() {
           const host = new URL(url).hostname;
           setHostname(host);
           setEnabled(ed[host] !== false);
+          setPopupBlocked(pb[host] === true);
 
           const list = res.selectors?.[host] ?? [];
           setSelectors(list);
@@ -39,12 +44,6 @@ function Popup() {
     const updated = { ...enabledDomains, [hostname]: newState };
     setEnabledDomains(prev => ({ ...prev, [hostname]: newState }));
     chrome.storage.local.set({ enabledDomains: updated });
-
-    chrome.runtime.sendMessage({
-      type: "TOGGLE_ENABLED",
-      hostname,
-      payload: newState
-    });
   };
 
   const addSelector = () => {
@@ -72,6 +71,25 @@ function Popup() {
     });
   };
 
+  const toggleBlockPopups = () => {
+    const newState = !popupBlocked;
+    setPopupBlocked(newState);
+
+    const updated = { ...popupBlockMap, [hostname]: newState };
+    setPopupBlockMap(updated);
+
+    chrome.storage.local.set({ popupBlockMap: updated }, () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tabId = tabs[0]?.id;
+        if (!tabId) return;
+
+        chrome.tabs.sendMessage(tabId, {
+          type: newState ? "BLOCK_POPUPS_ENABLE" : "BLOCK_POPUPS_DISABLE"
+        });
+      });
+    });
+  };
+
   return (
     <div className="w-[357px] h-[580px]">
       <div className="flex py-4 justify-center bg-primary text-primary-foreground">
@@ -82,6 +100,17 @@ function Popup() {
         {enabled ?
           (<ShieldCheck strokeWidth={2.5} size={80} className="cursor-pointer hover:opacity-60" onClick={toggle} />) :
           (<ShieldX strokeWidth={2.5} size={80} className="cursor-pointer hover:opacity-60" onClick={toggle} />)}
+      </div>
+
+      <div className="flex justify-center mb-2">
+        <Button
+          className="text-sm font-medium cursor-pointer"
+          variant={popupBlocked ? "secondary" : "default"}
+          onClick={toggleBlockPopups}
+        >
+          {popupBlocked ? "Popup đã bị chặn (Bấm để bỏ chặn)" : "Chặn tất cả popup trên trang này"}
+          <ShieldAlert size={16} className="ml-2" />
+        </Button>
       </div>
 
       <div className="p-4">
