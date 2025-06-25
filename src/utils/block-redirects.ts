@@ -28,7 +28,7 @@ export function blockAllAnchorClicks() {
     if (!isAllowed) {
       e.preventDefault();
       e.stopPropagation();
-      console.warn("[TrgBlocker] Blocked anchor click:", anchor.href);
+      console.warn("Blocked anchor click:", anchor.href);
     }
   }, true); // Capture phase để chặn sớm nhất
 }

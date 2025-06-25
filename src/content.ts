@@ -13,7 +13,7 @@ function removeElements(selectors: string[]) {
     try {
       document.querySelectorAll(selector).forEach(el => el.remove());
     } catch (err) {
-      console.warn("[TrgBlocker] Invalid selector:", selector);
+      console.warn("Invalid selector:", selector);
     }
   }
 }
