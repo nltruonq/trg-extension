@@ -120,7 +120,8 @@ function runBlocker(userSelectors: string[], isBlockPopups: boolean) {
 
   const executeAll = () => {
     removeElements(allSelectors);
-    isBlockPopups ?? overrideWindowOpen();
+    fakeVisibility();
+    isBlockPopups && overrideWindowOpen();
   };
 
   executeAll();
@@ -149,3 +150,28 @@ function runIfEnabledPerDomain() {
 }
 
 runIfEnabledPerDomain();
+
+
+//fakeVisibility
+function fakeVisibility() {
+  Object.defineProperty(document, 'hidden', {
+    get: () => false,
+    configurable: true
+  });
+
+  Object.defineProperty(document, 'visibilityState', {
+    get: () => 'visible',
+    configurable: true
+  });
+
+  document.addEventListener('visibilitychange', (e) => {
+    e.stopImmediatePropagation();
+  }, true);
+
+  window.onblur = null;
+  window.onfocus = null;
+
+  window.addEventListener('blur', (e) => {
+    e.stopImmediatePropagation();
+  }, true);
+}
