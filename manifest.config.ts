@@ -6,7 +6,7 @@ const [major, minor, patch, label = "0"] = version
 	.replace(/[^\d.-]+/g, "")
 	.split(/[.-]/);
 
-export default defineManifest(async (_env) => ({
+export default defineManifest(async () => ({
 	manifest_version: 3,
 	name: "Trg",
 

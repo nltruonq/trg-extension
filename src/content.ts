@@ -1,177 +1,138 @@
-import unique from 'unique-selector';
-const options = {
-  selectorTypes: ['ID', 'Class', 'Tag', 'NthChild']
-}
+import unique from "unique-selector";
 
-const originalWindowOpen = window.open;
+const options = {
+  selectorTypes: ["ID", "Class", "Tag", "NthChild"],
+};
 
 const defaultSelectors = [
   '[id*="sponsor"]',
-  'iframe[src*="ads"]'
+  'iframe[src*="ads"]',
 ];
+
+const defaultBlurSelectors = [
+  'div[role="grid"][aria-label^="Tin nhắn trong cuộc trò chuyện với"] div[dir="auto"]',
+  'div[role="grid"][aria-label^="Tin nhắn trong cuộc trò chuyện với"] span[dir="auto"]',
+  'div[role="grid"][aria-label^="Tin nhắn trong cuộc trò chuyện với"] img',
+  'div[role="grid"][aria-label^="Tin nhắn trong cuộc trò chuyện với"] video',
+  'div[role="grid"][aria-label^="Tin nhắn trong cuộc trò chuyện với"] canvas',
+];
+
+const blurClassName = "trg-chat-blur";
+const blurStyleId = "trg-chat-blur-style";
+
+let lastRightClickElement: HTMLElement | null = null;
+
+document.addEventListener("contextmenu", (event) => {
+  lastRightClickElement = event.target as HTMLElement;
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type !== "CONTEXT_BLOCK_REQUEST" || !lastRightClickElement) return;
+
+  const selector = unique(lastRightClickElement, options);
+  const hostname = location.hostname;
+
+  chrome.storage.local.get(["selectors"], (res) => {
+    const current = res.selectors ?? {};
+    const hostSelectors = current[hostname] ?? [];
+    if (!hostSelectors.includes(selector)) {
+      hostSelectors.push(selector);
+    }
+
+    chrome.storage.local.set({
+      selectors: {
+        ...current,
+        [hostname]: hostSelectors,
+      },
+    });
+
+    lastRightClickElement?.remove();
+  });
+});
 
 function removeElements(selectors: string[]) {
   for (const selector of selectors) {
     try {
-      document.querySelectorAll(selector).forEach(el => el.remove());
-    } catch (err) {
+      document.querySelectorAll(selector).forEach((el) => el.remove());
+    } catch {
       console.warn("Invalid selector:", selector);
     }
   }
 }
 
-let lastRightClickElement: HTMLElement | null = null;
+function applyBlurBySelectors(selectors: string[]) {
+  ensureBlurStyle();
+  clearBlur();
 
-document.addEventListener("contextmenu", (e) => {
-  lastRightClickElement = e.target as HTMLElement;
-});
-
-function overrideWindowOpen() {
-  window.open = () => {
-    console.warn("Blocked popup");
-    return null;
-  };
-
-  document.querySelectorAll('a[target="_blank"], a[target="_self"]').forEach((a) => {
-    a.removeAttribute("target");
-    a.setAttribute("rel", "noopener noreferrer");
-  });
-
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof Element)) continue;
-
-        node.querySelectorAll?.('a[target="_blank"], a[target="_self"]').forEach((a) => {
-          a.removeAttribute("target");
-          a.setAttribute("rel", "noopener noreferrer");
-        });
-
-        if (
-          node.tagName === "A" &&
-          (node.getAttribute("target") === "_blank" || node.getAttribute("target") === "_self")
-        ) {
-          node.removeAttribute("target");
-          node.setAttribute("rel", "noopener noreferrer");
-        }
-      }
+  for (const selector of selectors) {
+    try {
+      document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+        if (el instanceof HTMLImageElement && isAvatarImage(el)) return;
+        el.classList.add(blurClassName);
+      });
+    } catch {
+      console.warn("Invalid blur selector:", selector);
     }
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-
-  document.addEventListener("click", (e) => {
-    const target = e.target as HTMLElement;
-    const anchor = target.closest("a") as HTMLAnchorElement | null;
-    if (!anchor) return;
-
-    const isBlockTarget =
-      anchor.getAttribute("target") === "_self" ||
-      anchor.getAttribute("target") === "_blank";
-
-    if (isBlockTarget || anchor.href) {
-      e.preventDefault();
-      e.stopPropagation();
-      console.warn("Navigation blocked:", anchor.href);
-    }
-  }, true);
+  }
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "BLOCK_POPUPS_ENABLE") {
-    overrideWindowOpen();
-  }
+function isAvatarImage(el: HTMLImageElement) {
+  const width = el.getBoundingClientRect().width || el.naturalWidth || Number(el.getAttribute("width") ?? 0);
+  const height = el.getBoundingClientRect().height || el.naturalHeight || Number(el.getAttribute("height") ?? 0);
+  return width === 28 || height === 28;
+}
 
-  if (msg.type === "BLOCK_POPUPS_DISABLE") {
-    window.open = originalWindowOpen;
-    console.warn("Popup blocking disabled.");
-  }
-});
+function clearBlur() {
+  document.querySelectorAll<HTMLElement>(`.${blurClassName}`).forEach((el) => {
+    el.classList.remove(blurClassName);
+  });
+}
 
-chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
-  if (msg.type === "CONTEXT_BLOCK_REQUEST" && lastRightClickElement) {
-    const selector = unique(lastRightClickElement, options);
-    const hostname = location.hostname;
+function ensureBlurStyle() {
+  if (document.getElementById(blurStyleId)) return;
 
-    chrome.storage.local.get(["selectors"], (res) => {
-      const current = res.selectors ?? {};
-      const hostSelectors = current[hostname] ?? [];
-      if (!hostSelectors.includes(selector)) {
-        hostSelectors.push(selector);
-      }
+  const style = document.createElement("style");
+  style.id = blurStyleId;
+  style.textContent = `
+    .${blurClassName} {
+      filter: blur(0.32rem) contrast(1.04) saturate(0.9);
+      transition: filter 140ms ease;
+    }
 
-      chrome.storage.local.set({
-        selectors: {
-          ...current,
-          [hostname]: hostSelectors
-        }
-      });
-
-      lastRightClickElement?.remove();
-    });
-  }
-});
-
-function runBlocker(userSelectors: string[], isBlockPopups: boolean) {
-  const allSelectors = [...defaultSelectors, ...userSelectors];
-
-  const executeAll = () => {
-    removeElements(allSelectors);
-    fakeVisibility();
-    isBlockPopups && overrideWindowOpen();
-  };
-
-  executeAll();
-
-  const root = document.documentElement;
-  if (root) {
-    new MutationObserver(executeAll).observe(root, {
-      childList: true,
-      subtree: true
-    });
-  }
+    .${blurClassName}:hover,
+    .${blurClassName}:focus-within {
+      filter: none;
+    }
+  `;
+  document.head.append(style);
 }
 
 function runIfEnabledPerDomain() {
   const hostname = location.hostname;
 
-  chrome.storage.local.get(["enabledDomains", "selectors", "popupBlockMap"], (res) => {
+  chrome.storage.local.get(["enabledDomains", "selectors", "blurMap"], (res) => {
     const enabledMap = res.enabledDomains ?? {};
-    const popupMap = res.popupBlockMap ?? {};
     const isEnabled = enabledMap[hostname] !== false;
-    if (!isEnabled) return;
+    const blurMap = res.blurMap ?? {};
+    const blurEnabled = blurMap[hostname] !== false;
+
+    if (!isEnabled || !blurEnabled) {
+      clearBlur();
+      return;
+    }
 
     const userSelectors = res.selectors?.[hostname] ?? [];
-    runBlocker(userSelectors, popupMap[hostname]);
+    removeElements([...defaultSelectors, ...userSelectors]);
+    applyBlurBySelectors([...defaultBlurSelectors, ...userSelectors]);
   });
 }
 
 runIfEnabledPerDomain();
 
-
-//fakeVisibility
-function fakeVisibility() {
-  Object.defineProperty(document, 'hidden', {
-    get: () => false,
-    configurable: true
+const root = document.documentElement;
+if (root) {
+  new MutationObserver(runIfEnabledPerDomain).observe(root, {
+    childList: true,
+    subtree: true,
   });
-
-  Object.defineProperty(document, 'visibilityState', {
-    get: () => 'visible',
-    configurable: true
-  });
-
-  document.addEventListener('visibilitychange', (e) => {
-    e.stopImmediatePropagation();
-  }, true);
-
-  window.onblur = null;
-  window.onfocus = null;
-
-  window.addEventListener('blur', (e) => {
-    e.stopImmediatePropagation();
-  }, true);
 }
