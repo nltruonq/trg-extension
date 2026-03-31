@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.ts-D97c9rsV.js"
+        "assets/content.ts-B08d5VYM.js"
       ],
       "matches": [
         "<all_urls>"
@@ -47,7 +47,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/content.ts-D97c9rsV.js"
+        "assets/content.ts-B08d5VYM.js"
       ],
       "use_dynamic_url": false
     }

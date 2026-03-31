@@ -19,6 +19,7 @@ const defaultBlurSelectors = [
 
 const blurClassName = "trg-chat-blur";
 const blurStyleId = "trg-chat-blur-style";
+const mediaHotZoneClass = "trg-chat-media-hotzone";
 
 let lastRightClickElement: HTMLElement | null = null;
 
@@ -69,6 +70,9 @@ function applyBlurBySelectors(selectors: string[]) {
       document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
         if (el instanceof HTMLImageElement && isAvatarImage(el)) return;
         el.classList.add(blurClassName);
+        if (isMediaElement(el)) {
+          markMediaHotZone(el);
+        }
       });
     } catch {
       console.warn("Invalid blur selector:", selector);
@@ -85,6 +89,9 @@ function isAvatarImage(el: HTMLImageElement) {
 function clearBlur() {
   document.querySelectorAll<HTMLElement>(`.${blurClassName}`).forEach((el) => {
     el.classList.remove(blurClassName);
+  });
+  document.querySelectorAll<HTMLElement>(`.${mediaHotZoneClass}`).forEach((el) => {
+    el.classList.remove(mediaHotZoneClass);
   });
 }
 
@@ -103,8 +110,32 @@ function ensureBlurStyle() {
     .${blurClassName}:focus-within {
       filter: none;
     }
+
+    .${blurClassName}:has(img:hover),
+    .${blurClassName}:has(video:hover),
+    .${blurClassName}:has(canvas:hover) {
+      filter: none;
+    }
+
+    .${blurClassName}:has(.${mediaHotZoneClass}:hover) {
+      filter: none;
+    }
   `;
   document.head.append(style);
+}
+
+function isMediaElement(el: HTMLElement) {
+  return el instanceof HTMLImageElement || el instanceof HTMLVideoElement || el instanceof HTMLCanvasElement;
+}
+
+function markMediaHotZone(el: HTMLElement) {
+  el.classList.add(mediaHotZoneClass);
+
+  let parent: HTMLElement | null = el.parentElement;
+  for (let depth = 0; depth < 3 && parent; depth += 1) {
+    parent.classList.add(mediaHotZoneClass);
+    parent = parent.parentElement;
+  }
 }
 
 function runIfEnabledPerDomain() {
