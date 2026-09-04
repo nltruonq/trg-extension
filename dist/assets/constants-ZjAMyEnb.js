@@ -1,0 +1,1 @@
+const t="data-trg-blur",_="data-trg-blur-scope",s='[data-message-id], [role="article"], [role="row"], [role="listitem"], li',E="trg-blur-style",R={ADD_BLOCK_SELECTOR:"TRG_ADD_BLOCK_SELECTOR",ADD_BLUR_SELECTOR:"TRG_ADD_BLUR_SELECTOR"},a={BLOCK:"trg-block-element",BLUR:"trg-blur-element"},e=40;export{e as A,t as B,a as C,R as M,_ as a,s as b,E as c};

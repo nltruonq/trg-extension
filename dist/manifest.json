@@ -1,21 +1,21 @@
 {
-  "name": "Trg",
-  "description": "",
-  "version": "0.0.1",
   "manifest_version": 3,
+  "name": "Trg",
+  "description": "Chặn và làm mờ nội dung trên trang web theo từng domain.",
+  "version": "0.0.1",
   "action": {
     "default_popup": "index.html",
+    "default_title": "Trg",
     "default_icon": {
       "16": "icon.png",
       "48": "icon.png",
       "128": "icon.png"
-    },
-    "default_title": "Trg"
+    }
   },
   "content_scripts": [
     {
       "js": [
-        "assets/content.ts-B08d5VYM.js"
+        "assets/index.ts-loader-PiAViAPY.js"
       ],
       "matches": [
         "<all_urls>"
@@ -29,7 +29,6 @@
   },
   "permissions": [
     "contextMenus",
-    "background",
     "tabs",
     "storage"
   ],
@@ -47,7 +46,9 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/content.ts-B08d5VYM.js"
+        "assets/storage-cq07BUTL.js",
+        "assets/constants-ZjAMyEnb.js",
+        "assets/index.ts-CcAaWbOP.js"
       ],
       "use_dynamic_url": false
     }

@@ -1,54 +1,55 @@
-# React + TypeScript + Vite
+# Trg
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Chrome extension (MV3) chặn và làm mờ nội dung trên trang web, cấu hình riêng theo từng domain.
 
-Currently, two official plugins are available:
+## Tính năng
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Chặn**: gỡ hẳn phần tử khỏi DOM theo CSS selector.
+- **Làm mờ**: che nội dung, rê chuột vào để xem — mặc định áp cho khung chat Facebook/Messenger.
+- **Context menu**: click phải vào phần tử bất kỳ để thêm nhanh vào danh sách chặn hoặc làm mờ.
+- Bật/tắt độc lập theo domain, lưu trong `chrome.storage.local`.
 
-## Expanding the ESLint configuration
+## Cấu trúc
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+src/
+  shared/        Dùng chung giữa popup, content script và background
+    types.ts       Kiểu dữ liệu của settings
+    constants.ts   Attribute, id style, message type, id context menu
+    storage.ts     Đọc/ghi chrome.storage.local + theo dõi thay đổi
+    site-rules.ts  Selector mặc định theo site (global, Facebook/Messenger)
+  content/       Chạy trong trang web
+    index.ts       Bootstrap: cache settings, MutationObserver, điều phối
+    blur.ts        Gắn/gỡ attribute làm mờ + inject CSS
+    blocker.ts     Gỡ phần tử theo selector
+    context-menu.ts Cầu nối click phải ↔ background
+    dom.ts         querySelectorAll không ném lỗi
+  background/    Service worker: đăng ký context menu
+  popup/         UI React
+    useSettings.ts Hook đồng bộ settings với storage
+    PopupApp.tsx   Màn hình chính
+    SelectorList.tsx
+  components/ui/ shadcn/ui
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Storage
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```ts
+{
+  enabledDomains: Record<string, boolean>  // thiếu key = bật
+  blurMap:        Record<string, boolean>  // thiếu key = bật
+  selectors:      Record<string, string[]> // selector bị chặn
+  blurSelectors:  Record<string, string[]> // selector bị làm mờ
+}
 ```
+
+## Phát triển
+
+```bash
+npm install
+npm run dev     # HMR, load thư mục dist bằng "Load unpacked"
+npm run build   # build production vào dist/
+npm run lint
+```
+
+Vào `chrome://extensions` → bật Developer mode → **Load unpacked** → chọn thư mục `dist`.
