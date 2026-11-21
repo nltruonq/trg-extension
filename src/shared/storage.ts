@@ -1,10 +1,12 @@
-import type { DomainFlags, SelectorKind, Settings } from "./types";
+import type { DomainFlagKey, DomainFlags, SelectorKind, Settings } from "./types";
 
 export const DEFAULT_SETTINGS: Settings = {
   enabledDomains: {},
   blurMap: {},
   selectors: {},
   blurSelectors: {},
+  themeMap: {},
+  popupGuardMap: {},
 };
 
 const KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
@@ -19,13 +21,24 @@ export function isDomainEnabled(flags: DomainFlags, host: string): boolean {
   return flags[host] !== false;
 }
 
+/** Ngược lại với `isDomainEnabled`: thiếu key nghĩa là TẮT. Dùng cho những
+ *  tính năng can thiệp mạnh (chặn click) — bật bừa trên mọi trang sẽ phá web. */
+export function isDomainOptedIn(flags: DomainFlags, host: string): boolean {
+  return flags[host] === true;
+}
+
 export async function setDomainFlag(
-  key: "enabledDomains" | "blurMap",
+  key: DomainFlagKey,
   host: string,
   value: boolean,
 ): Promise<void> {
   const settings = await readSettings();
   await chrome.storage.local.set({ [key]: { ...settings[key], [host]: value } });
+}
+
+export async function setTheme(host: string, themeId: string): Promise<void> {
+  const settings = await readSettings();
+  await chrome.storage.local.set({ themeMap: { ...settings.themeMap, [host]: themeId } });
 }
 
 export async function setSelectors(

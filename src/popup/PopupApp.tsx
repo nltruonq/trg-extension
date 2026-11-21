@@ -1,4 +1,4 @@
-import { Eye, EyeOff, ShieldCheck, ShieldX } from "lucide-react";
+import { Eye, EyeOff, MousePointerClick, MousePointerBan, ShieldCheck, ShieldX } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
 import type { SelectorKind } from "../shared/types";
 import { SelectorList } from "./SelectorList";
+import { ThemePicker } from "./ThemePicker";
 import { useSettings } from "./useSettings";
 
 const TABS: { kind: SelectorKind; label: string; empty: string }[] = [
@@ -19,9 +20,12 @@ export function PopupApp() {
     loading,
     enabled,
     blurEnabled,
+    popupGuardEnabled,
     blockSelectors,
     blurSelectors,
+    themeId,
     toggleFlag,
+    chooseTheme,
     addSelector,
     removeSelector,
   } = useSettings();
@@ -44,7 +48,7 @@ export function PopupApp() {
         <p className="font-semibold">{loading ? "Đang tải..." : host || "Trang không hỗ trợ"}</p>
       </header>
 
-      <div className="flex flex-col items-center gap-3 p-4 pb-2">
+      <div className="flex flex-col items-center gap-3 p-4 pb-3">
         <button
           type="button"
           aria-label={enabled ? "Tắt trên trang này" : "Bật trên trang này"}
@@ -53,7 +57,7 @@ export function PopupApp() {
           onClick={() => toggleFlag("enabledDomains")}
           className="cursor-pointer transition-opacity hover:opacity-60 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <ShieldIcon strokeWidth={2.5} size={80} />
+          <ShieldIcon strokeWidth={2.5} size={64} />
         </button>
 
         <Button
@@ -65,6 +69,21 @@ export function PopupApp() {
           {blurEnabled ? <Eye size={16} /> : <EyeOff size={16} />}
           {blurEnabled ? "Blur chat: Bật" : "Blur chat: Tắt"}
         </Button>
+
+        <Button
+          onClick={() => toggleFlag("popupGuardMap")}
+          variant={popupGuardEnabled ? "default" : "secondary"}
+          disabled={!host || !enabled}
+          title="Chặn link mở tab mới khi click. Ctrl+click để mở link bị chặn."
+          className="w-full cursor-pointer"
+        >
+          {popupGuardEnabled ? <MousePointerBan size={16} /> : <MousePointerClick size={16} />}
+          {popupGuardEnabled ? "Chặn popup: Bật" : "Chặn popup: Tắt"}
+        </Button>
+      </div>
+
+      <div className="px-4 pb-3">
+        <ThemePicker value={themeId} disabled={!host || !enabled} onChange={chooseTheme} />
       </div>
 
       <div className="flex gap-2 px-4 pb-2">

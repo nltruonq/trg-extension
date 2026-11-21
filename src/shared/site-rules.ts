@@ -1,4 +1,12 @@
 /** Luật mặc định theo site. Người dùng vẫn có thể bổ sung selector riêng từ popup. */
+/** Nơi tìm bong bóng tin nhắn để trang trí khung. */
+export interface DecorTargets {
+  /** Phần tử bọc ngoài một tin nhắn. */
+  message: string;
+  /** Bong bóng chứa chữ. */
+  bubble: string;
+}
+
 export interface SiteRule {
   matches: (host: string) => boolean;
   /** Selector bị gỡ khỏi DOM. */
@@ -7,12 +15,26 @@ export interface SiteRule {
   blur?: string[];
   /** Phần tử khớp (hoặc nằm trong phần tử khớp) thì không làm mờ. */
   blurExclude?: string[];
+  /** Nơi tìm bong bóng để trang trí khung. */
+  decor?: DecorTargets;
+  /** Click vào đây thì chặn mở tab mới, kể cả khi link trông bình thường. */
+  popupDeny?: string[];
+  /** Click vào đây thì luôn cho mở — thắng mọi luật chặn. */
+  popupAllow?: string[];
 }
 
 /** Áp dụng cho mọi site. */
 const GLOBAL_RULE: SiteRule = {
   matches: () => true,
   block: ['[id*="sponsor"]', 'iframe[src*="ads"]'],
+  popupDeny: [
+    // Khung quảng cáo nhúng: mọi link bên trong đều dẫn ra ngoài.
+    "ins.adsbygoogle a",
+    '[id*="sponsor" i] a',
+    '[class*="banner" i] a[target]',
+    // `javascript:` + target là dấu hiệu kinh điển của bẫy window.open.
+    'a[href^="javascript:"][target]',
+  ],
 };
 
 /**
@@ -56,9 +78,24 @@ const FACEBOOK_RULE: SiteRule = {
     FB_BLUR_TARGETS.map((target) => `${root} ${target}`),
   ),
   blurExclude: FB_BLUR_EXCLUDE,
+  decor: {
+    message: "[data-message-id]",
+    // Bong bóng là phần tử bọc trực tiếp đoạn chữ — đúng cho cả tin đến lẫn tin đi.
+    // Sticker và ảnh không có `span[dir="auto"]` nên tự khắc không bị trang trí.
+    bubble: '[data-message-id] div[role="presentation"]:has(> span[dir="auto"])',
+  },
 };
 
 const RULES: SiteRule[] = [GLOBAL_RULE, FACEBOOK_RULE];
+
+/** Gộp luật chặn popup của mọi rule khớp host thành hai selector. */
+export function popupRulesFor(host: string): { deny: string; allow: string } {
+  const matched = RULES.filter((rule) => rule.matches(host));
+  return {
+    deny: matched.flatMap((rule) => rule.popupDeny ?? []).join(", "),
+    allow: matched.flatMap((rule) => rule.popupAllow ?? []).join(", "),
+  };
+}
 
 export function blockSelectorsFor(host: string): string[] {
   return RULES.filter((rule) => rule.matches(host)).flatMap((rule) => rule.block ?? []);
@@ -66,6 +103,10 @@ export function blockSelectorsFor(host: string): string[] {
 
 export function blurSelectorsFor(host: string): string[] {
   return RULES.filter((rule) => rule.matches(host)).flatMap((rule) => rule.blur ?? []);
+}
+
+export function decorTargetsFor(host: string): DecorTargets | null {
+  return RULES.find((rule) => rule.matches(host) && rule.decor)?.decor ?? null;
 }
 
 /** Gộp thành một selector để chỉ cần một lần `closest()` cho mỗi phần tử. */

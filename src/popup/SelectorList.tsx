@@ -10,7 +10,7 @@ interface SelectorListProps {
 
 export function SelectorList({ items, emptyLabel, onRemove }: SelectorListProps) {
   return (
-    <ScrollArea className="h-[176px] p-2">
+    <ScrollArea className="h-[150px] p-2">
       {items.length === 0 ? (
         <p className="px-1 py-6 text-center text-sm text-muted-foreground">{emptyLabel}</p>
       ) : (

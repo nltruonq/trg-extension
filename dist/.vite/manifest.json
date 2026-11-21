@@ -1,51 +1,58 @@
 {
   "../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-yxfzlgKQ.js",
+    "file": "assets/crx-manifest.js-DI_FmmxT.js",
     "name": "crx-manifest.js",
     "src": "../../../../@crx/manifest",
     "isEntry": true
   },
-  "_constants-ZjAMyEnb.js": {
-    "file": "assets/constants-ZjAMyEnb.js",
+  "_constants-DiZ4HZUH.js": {
+    "file": "assets/constants-DiZ4HZUH.js",
     "name": "constants"
   },
-  "_index.ts-loader-PiAViAPY.js": {
-    "file": "assets/index.ts-loader-PiAViAPY.js",
-    "src": "_index.ts-loader-PiAViAPY.js"
+  "_index.ts-loader-DVklF-XP.js": {
+    "file": "assets/index.ts-loader-DVklF-XP.js",
+    "src": "_index.ts-loader-DVklF-XP.js"
   },
-  "_storage-cq07BUTL.js": {
-    "file": "assets/storage-cq07BUTL.js",
+  "_storage-CnoYWep3.js": {
+    "file": "assets/storage-CnoYWep3.js",
     "name": "storage"
   },
+  "_themes-CEUuST2L.js": {
+    "file": "assets/themes-CEUuST2L.js",
+    "name": "themes"
+  },
   "index.html": {
-    "file": "assets/index.html-DZWc-Mqi.js",
+    "file": "assets/index.html-Cub8AVu3.js",
     "name": "index.html",
     "src": "index.html",
     "isEntry": true,
     "imports": [
-      "_storage-cq07BUTL.js"
+      "_themes-CEUuST2L.js",
+      "_storage-CnoYWep3.js"
     ],
     "css": [
-      "assets/index--UsX3GTr.css"
+      "assets/index-B9_BaxxE.css"
     ]
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-BOzRH8v9.js",
+    "file": "assets/index.ts-CS9Qhh8D.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
     "imports": [
-      "_constants-ZjAMyEnb.js"
+      "_constants-DiZ4HZUH.js",
+      "_storage-CnoYWep3.js"
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-CcAaWbOP.js",
+    "file": "assets/index.ts-DO2GZAEN.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,
     "imports": [
-      "_storage-cq07BUTL.js",
-      "_constants-ZjAMyEnb.js"
+      "_themes-CEUuST2L.js",
+      "_storage-CnoYWep3.js",
+      "_constants-DiZ4HZUH.js"
     ]
   }
 }

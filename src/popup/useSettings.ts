@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DEFAULT_SETTINGS,
   isDomainEnabled,
+  isDomainOptedIn,
   onSettingsChanged,
   readSettings,
   setDomainFlag,
   setSelectors,
+  setTheme,
 } from "../shared/storage";
-import type { SelectorKind, Settings } from "../shared/types";
+import { DEFAULT_THEME_ID } from "../shared/themes";
+import type { DomainFlagKey, SelectorKind, Settings } from "../shared/types";
 
 async function readActiveHost(): Promise<string> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -35,9 +38,14 @@ export function useSettings() {
   }, []);
 
   const toggleFlag = useCallback(
-    (key: "enabledDomains" | "blurMap") => {
+    (key: DomainFlagKey) => {
       if (!host) return;
-      void setDomainFlag(key, host, !isDomainEnabled(settings[key], host));
+      // popupGuardMap theo chiều ngược: thiếu key = tắt.
+      const current =
+        key === "popupGuardMap"
+          ? isDomainOptedIn(settings[key], host)
+          : isDomainEnabled(settings[key], host);
+      void setDomainFlag(key, host, !current);
     },
     [host, settings],
   );
@@ -51,6 +59,14 @@ export function useSettings() {
       void setSelectors(kind, host, [...current, value]);
     },
     [host, settings],
+  );
+
+  const chooseTheme = useCallback(
+    (themeId: string) => {
+      if (!host) return;
+      void setTheme(host, themeId);
+    },
+    [host],
   );
 
   const removeSelector = useCallback(
@@ -67,9 +83,12 @@ export function useSettings() {
     loading,
     enabled: isDomainEnabled(settings.enabledDomains, host),
     blurEnabled: isDomainEnabled(settings.blurMap, host),
+    popupGuardEnabled: isDomainOptedIn(settings.popupGuardMap, host),
     blockSelectors: settings.selectors[host] ?? [],
     blurSelectors: settings.blurSelectors[host] ?? [],
+    themeId: settings.themeMap[host] ?? DEFAULT_THEME_ID,
     toggleFlag,
+    chooseTheme,
     addSelector,
     removeSelector,
   };

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Trg",
-  "description": "Chặn và làm mờ nội dung trên trang web theo từng domain.",
+  "description": "Ch\u1eb7n v\u00e0 l\u00e0m m\u1edd n\u1ed9i dung tr\u00ean trang web theo t\u1eebng domain.",
   "version": "0.0.1",
   "action": {
     "default_popup": "index.html",
@@ -14,8 +14,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/index.ts"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/index.ts"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -23,8 +27,15 @@
     "service_worker": "src/background/index.ts",
     "type": "module"
   },
-  "permissions": ["contextMenus", "tabs", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "contextMenus",
+    "tabs",
+    "storage",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
