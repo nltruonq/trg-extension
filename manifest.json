@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Trg",
-  "description": "Ch\u1eb7n v\u00e0 l\u00e0m m\u1edd n\u1ed9i dung tr\u00ean trang web theo t\u1eebng domain.",
+  "description": "Chặn và làm mờ nội dung trên trang web theo từng domain.",
   "version": "0.0.1",
   "action": {
     "default_popup": "index.html",
@@ -31,7 +31,9 @@
     "contextMenus",
     "tabs",
     "storage",
-    "webNavigation"
+    "webNavigation",
+    "declarativeNetRequest",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

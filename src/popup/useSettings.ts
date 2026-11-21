@@ -5,12 +5,14 @@ import {
   isDomainOptedIn,
   onSettingsChanged,
   readSettings,
+  setBlockedDomains,
   setDomainFlag,
   setSelectors,
   setTheme,
 } from "../shared/storage";
+import { normalizeDomain } from "../shared/domains";
 import { DEFAULT_THEME_ID } from "../shared/themes";
-import type { DomainFlagKey, SelectorKind, Settings } from "../shared/types";
+import type { DomainFlagKey, ListKind, Settings } from "../shared/types";
 
 async function readActiveHost(): Promise<string> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -50,13 +52,24 @@ export function useSettings() {
     [host, settings],
   );
 
-  const addSelector = useCallback(
-    (kind: SelectorKind, selector: string) => {
-      const value = selector.trim();
-      if (!value || !host) return;
+  /** Trả về false nếu giá trị không hợp lệ hoặc đã có — để UI báo lỗi. */
+  const addItem = useCallback(
+    (kind: ListKind, raw: string): boolean => {
+      const value = raw.trim();
+      if (!value) return false;
+
+      if (kind === "blockedDomains") {
+        const domain = normalizeDomain(value);
+        if (!domain || settings.blockedDomains.includes(domain)) return false;
+        void setBlockedDomains([...settings.blockedDomains, domain]);
+        return true;
+      }
+
+      if (!host) return false;
       const current = settings[kind][host] ?? [];
-      if (current.includes(value)) return;
+      if (current.includes(value)) return false;
       void setSelectors(kind, host, [...current, value]);
+      return true;
     },
     [host, settings],
   );
@@ -69,11 +82,15 @@ export function useSettings() {
     [host],
   );
 
-  const removeSelector = useCallback(
-    (kind: SelectorKind, selector: string) => {
+  const removeItem = useCallback(
+    (kind: ListKind, value: string) => {
+      if (kind === "blockedDomains") {
+        void setBlockedDomains(settings.blockedDomains.filter((item) => item !== value));
+        return;
+      }
       if (!host) return;
       const current = settings[kind][host] ?? [];
-      void setSelectors(kind, host, current.filter((item) => item !== selector));
+      void setSelectors(kind, host, current.filter((item) => item !== value));
     },
     [host, settings],
   );
@@ -86,10 +103,11 @@ export function useSettings() {
     popupGuardEnabled: isDomainOptedIn(settings.popupGuardMap, host),
     blockSelectors: settings.selectors[host] ?? [],
     blurSelectors: settings.blurSelectors[host] ?? [],
+    blockedDomains: settings.blockedDomains,
     themeId: settings.themeMap[host] ?? DEFAULT_THEME_ID,
     toggleFlag,
     chooseTheme,
-    addSelector,
-    removeSelector,
+    addItem,
+    removeItem,
   };
 }

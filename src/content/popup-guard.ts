@@ -1,4 +1,5 @@
 import { MESSAGES, POPUP_BLOCKED_ATTR, POPUP_TOAST_TTL } from "../shared/constants";
+import { baseDomain, hostOf, matchesDomainList } from "../shared/domains";
 
 export interface PopupGuardConfig {
   /** Selector gộp: click vào đây thì chặn. */
@@ -7,9 +8,23 @@ export interface PopupGuardConfig {
   allow: string;
 }
 
-/** `null` = tắt. Listener vẫn nằm đó nhưng không làm gì. */
+/** `null` = luật chặn popup theo site đang tắt. Listener vẫn nằm đó. */
 let config: PopupGuardConfig | null = null;
+
+/** Danh sách domain bị chặn: toàn cục, hoạt động cả khi `config` là null. */
+let blockedDomains: string[] = [];
+
 let installed = false;
+
+/** Không có luật nào thì listener thoát ngay ở câu lệnh đầu. */
+function isActive(): boolean {
+  return config !== null || blockedDomains.length > 0;
+}
+
+function isBlockedHref(href: string): boolean {
+  const host = hostOf(href, location.href);
+  return host !== "" && matchesDomainList(blockedDomains, host);
+}
 
 /** Phần tử người dùng chủ động bấm. Chỉ click vào đây mới được phát vé mở tab —
  *  popunder hẹn giờ hoặc bắn từ vùng trống sẽ không có vé. */
@@ -21,20 +36,6 @@ const TRAP_AREA_RATIO = 0.6;
 
 /** <a> rỗng nhỏ hơn mức này (px²) chỉ là icon, không phải bẫy click. */
 const MIN_TRAP_AREA = 2000;
-
-/** Hậu tố công cộng hai cấp hay gặp: để `cdn.vnexpress.net` và `vnexpress.net`
- *  là cùng site, còn `a.com.vn` và `b.com.vn` thì không. Không phải PSL đầy đủ,
- *  nhưng đủ cho việc phân biệt "link nội bộ" và "link ra ngoài". */
-const TWO_LEVEL_SUFFIXES = new Set([
-  "com", "net", "org", "edu", "gov", "co", "ac", "or", "ne", "go", "info", "biz",
-]);
-
-function baseDomain(host: string): string {
-  const parts = host.toLowerCase().split(".");
-  if (parts.length <= 2) return parts.join(".");
-  const take = TWO_LEVEL_SUFFIXES.has(parts[parts.length - 2]) ? 3 : 2;
-  return parts.slice(-take).join(".");
-}
 
 /** `closest` không ném lỗi khi selector do người dùng nhập bị sai cú pháp. */
 function closestSafe(el: Element, selector: string): Element | null {
@@ -109,10 +110,14 @@ function anchorVerdict(a: HTMLAnchorElement, deny: string): string | null {
 }
 
 function verdictFor(target: EventTarget | null): string | null {
-  if (!config || !(target instanceof Element)) return null;
-  if (closestSafe(target, config.allow)) return null;
-
+  if (!(target instanceof Element)) return null;
   const anchor = closestSafe(target, "a[href]") as HTMLAnchorElement | null;
+
+  // Danh sách domain thắng mọi luật cho qua: người dùng đã tự gõ nó vào.
+  if (anchor && isBlockedHref(anchor.href)) return "domain bị chặn";
+
+  if (!config) return null;
+  if (closestSafe(target, config.allow)) return null;
   if (anchor) return anchorVerdict(anchor, config.deny);
   return closestSafe(target, config.deny) ? "luật của trang" : null;
 }
@@ -126,15 +131,22 @@ function notify(type: string): void {
   }
 }
 
+function isBlockedAnchorAt(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  const anchor = closestSafe(target, "a[href]") as HTMLAnchorElement | null;
+  return anchor !== null && isBlockedHref(anchor.href);
+}
+
 function ticket(target: EventTarget | null): void {
   if (!(target instanceof Element) || !closestSafe(target, INTERACTIVE)) return;
   notify(MESSAGES.POPUP_ALLOW_OPEN);
 }
 
 function onClick(event: MouseEvent): void {
-  if (!config) return;
+  if (!isActive()) return;
 
-  if (isIntentional(event)) {
+  // Ctrl+click vẫn mở được link thường, nhưng không mở được domain bị chặn.
+  if (isIntentional(event) && !isBlockedAnchorAt(event.target)) {
     ticket(event.target);
     return;
   }
@@ -161,10 +173,55 @@ function onClick(event: MouseEvent): void {
  * focus và khả năng bôi chọn chữ.
  */
 function onPress(event: Event): void {
-  if (!config) return;
-  if (event instanceof MouseEvent && isIntentional(event)) return;
+  if (!isActive()) return;
+  if (event instanceof MouseEvent && isIntentional(event) && !isBlockedAnchorAt(event.target)) {
+    return;
+  }
   if (!verdictFor(event.target)) return;
   event.stopImmediatePropagation();
+}
+
+// ---------------------------------------------------------------------------
+// Cầu nối với shield ở MAIN world. Shield không đọc được chrome.storage nên
+// danh sách phải đi qua postMessage trong trang.
+
+/** Chữ ký của lần đẩy gần nhất: `sync()` chạy mỗi frame có mutation, không
+ *  được bắn postMessage mỗi lần như thế. */
+let lastPushed = "";
+
+function pushToShield(): void {
+  const signature = `${config !== null}|${blockedDomains.join(",")}`;
+  if (signature === lastPushed) return;
+  lastPushed = signature;
+
+  window.postMessage(
+    {
+      type: MESSAGES.BLOCKLIST_PUSH,
+      domains: blockedDomains,
+      guard: config !== null,
+    },
+    "*",
+  );
+}
+
+function onPageMessage(event: MessageEvent): void {
+  if (event.source !== window) return;
+  const data = event.data as { type?: string; reason?: unknown } | null;
+  if (!data) return;
+
+  if (data.type === MESSAGES.BLOCKLIST_REQUEST) {
+    // Shield vừa khởi động và đang xin danh sách: đẩy lại kể cả khi không đổi.
+    lastPushed = "";
+    pushToShield();
+    return;
+  }
+
+  // Shield đã chặn một lời gọi trong trang — nó không gọi được chrome.* nên
+  // phần báo cáo và thông báo do bên này làm.
+  if (data.type === MESSAGES.POPUP_BLOCKED) {
+    notify(MESSAGES.POPUP_BLOCKED);
+    showToast(typeof data.reason === "string" ? data.reason : "bị chặn");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -238,6 +295,8 @@ export function installPopupGuard(): void {
   if (installed) return;
   installed = true;
 
+  window.addEventListener("message", onPageMessage, true);
+
   document.addEventListener("click", onClick, true);
   document.addEventListener("mousedown", onPress, true);
   document.addEventListener("pointerdown", onPress, true);
@@ -250,6 +309,7 @@ export function installPopupGuard(): void {
 
 export function setPopupGuardConfig(next: PopupGuardConfig | null): void {
   config = next;
+  pushToShield();
   if (!next) {
     clearTimeout(toastTimer);
     toastHost?.remove();
@@ -257,4 +317,9 @@ export function setPopupGuardConfig(next: PopupGuardConfig | null): void {
     toastBox = null;
     blockedCount = 0;
   }
+}
+
+export function setBlockedDomains(list: string[]): void {
+  blockedDomains = list;
+  pushToShield();
 }

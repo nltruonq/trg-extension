@@ -4,14 +4,40 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
-import type { SelectorKind } from "../shared/types";
+import type { ListKind } from "../shared/types";
 import { SelectorList } from "./SelectorList";
 import { ThemePicker } from "./ThemePicker";
 import { useSettings } from "./useSettings";
 
-const TABS: { kind: SelectorKind; label: string; empty: string }[] = [
-  { kind: "selectors", label: "Chặn", empty: "Chưa có selector bị chặn." },
-  { kind: "blurSelectors", label: "Làm mờ", empty: "Chưa có selector bị làm mờ." },
+interface TabSpec {
+  kind: ListKind;
+  label: string;
+  empty: string;
+  placeholder: string;
+  /** Danh sách domain là toàn cục nên dùng được cả khi tab hiện tại không hỗ trợ. */
+  global?: boolean;
+}
+
+const TABS: TabSpec[] = [
+  {
+    kind: "selectors",
+    label: "Chặn",
+    empty: "Chưa có selector bị chặn.",
+    placeholder: "Query selector...",
+  },
+  {
+    kind: "blurSelectors",
+    label: "Làm mờ",
+    empty: "Chưa có selector bị làm mờ.",
+    placeholder: "Query selector...",
+  },
+  {
+    kind: "blockedDomains",
+    label: "Domain",
+    empty: "Chưa chặn domain nào.",
+    placeholder: "ads.example.com",
+    global: true,
+  },
 ];
 
 export function PopupApp() {
@@ -23,23 +49,39 @@ export function PopupApp() {
     popupGuardEnabled,
     blockSelectors,
     blurSelectors,
+    blockedDomains,
     themeId,
     toggleFlag,
     chooseTheme,
-    addSelector,
-    removeSelector,
+    addItem,
+    removeItem,
   } = useSettings();
 
-  const [tab, setTab] = useState<SelectorKind>("selectors");
+  const [tab, setTab] = useState<ListKind>("selectors");
   const [input, setInput] = useState("");
+  const [error, setError] = useState("");
 
   const activeTab = TABS.find((item) => item.kind === tab) ?? TABS[0];
-  const items = tab === "selectors" ? blockSelectors : blurSelectors;
+  const ITEMS: Record<ListKind, string[]> = {
+    selectors: blockSelectors,
+    blurSelectors: blurSelectors,
+    blockedDomains,
+  };
+  const items = ITEMS[tab];
   const ShieldIcon = enabled ? ShieldCheck : ShieldX;
+  const inputDisabled = !host && !activeTab.global;
 
   const submit = () => {
-    addSelector(tab, input);
-    setInput("");
+    if (addItem(tab, input)) {
+      setInput("");
+      setError("");
+      return;
+    }
+    setError(
+      tab === "blockedDomains"
+        ? "Domain không hợp lệ hoặc đã có trong danh sách."
+        : "Selector trống hoặc đã có trong danh sách.",
+    );
   };
 
   return (
@@ -90,15 +132,24 @@ export function PopupApp() {
         <Input
           name="selector"
           value={input}
-          disabled={!host}
-          onChange={(event) => setInput(event.target.value)}
+          disabled={inputDisabled}
+          onChange={(event) => {
+            setInput(event.target.value);
+            setError("");
+          }}
           onKeyDown={(event) => event.key === "Enter" && submit()}
-          placeholder="Query selector..."
+          placeholder={activeTab.placeholder}
         />
-        <Button onClick={submit} disabled={!host || !input.trim()} className="cursor-pointer font-semibold">
+        <Button
+          onClick={submit}
+          disabled={inputDisabled || !input.trim()}
+          className="cursor-pointer font-semibold"
+        >
           Thêm
         </Button>
       </div>
+
+      {error && <p className="px-4 pb-2 text-xs text-red-500">{error}</p>}
 
       <Card className="mx-4 mb-4 gap-2 p-2">
         <div className="flex gap-1 rounded-md bg-muted p-1">
@@ -106,7 +157,10 @@ export function PopupApp() {
             <button
               key={item.kind}
               type="button"
-              onClick={() => setTab(item.kind)}
+              onClick={() => {
+                setTab(item.kind);
+                setError("");
+              }}
               className={cn(
                 "flex-1 cursor-pointer rounded-sm px-2 py-1 text-sm font-medium transition-colors",
                 tab === item.kind
@@ -115,9 +169,7 @@ export function PopupApp() {
               )}
             >
               {item.label}
-              <span className="ml-1 text-xs opacity-60">
-                {item.kind === "selectors" ? blockSelectors.length : blurSelectors.length}
-              </span>
+              <span className="ml-1 text-xs opacity-60">{ITEMS[item.kind].length}</span>
             </button>
           ))}
         </div>
@@ -125,7 +177,7 @@ export function PopupApp() {
         <SelectorList
           items={items}
           emptyLabel={activeTab.empty}
-          onRemove={(selector) => removeSelector(tab, selector)}
+          onRemove={(value) => removeItem(tab, value)}
         />
       </Card>
     </div>

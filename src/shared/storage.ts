@@ -1,3 +1,4 @@
+import { normalizeDomain } from "./domains";
 import type { DomainFlagKey, DomainFlags, SelectorKind, Settings } from "./types";
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -7,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   blurSelectors: {},
   themeMap: {},
   popupGuardMap: {},
+  blockedDomains: [],
 };
 
 const KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
@@ -59,6 +61,21 @@ export async function addSelector(
   const current = settings[kind][host] ?? [];
   if (current.includes(selector)) return;
   await setSelectors(kind, host, [...current, selector]);
+}
+
+export async function setBlockedDomains(list: string[]): Promise<void> {
+  await chrome.storage.local.set({ blockedDomains: list });
+}
+
+/** Trả về false nếu domain không hợp lệ hoặc đã có trong danh sách. */
+export async function addBlockedDomain(input: string): Promise<boolean> {
+  const domain = normalizeDomain(input);
+  if (!domain) return false;
+
+  const { blockedDomains } = await readSettings();
+  if (blockedDomains.includes(domain)) return false;
+  await setBlockedDomains([...blockedDomains, domain]);
+  return true;
 }
 
 /** Theo dõi thay đổi của storage.local; trả về hàm huỷ đăng ký. */

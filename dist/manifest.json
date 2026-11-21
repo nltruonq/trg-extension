@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-DVklF-XP.js"
+        "assets/index.ts-loader-Dxs-hXRs.js"
       ],
       "matches": [
         "<all_urls>"
@@ -31,7 +31,9 @@
     "contextMenus",
     "tabs",
     "storage",
-    "webNavigation"
+    "webNavigation",
+    "declarativeNetRequest",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -48,9 +50,9 @@
       ],
       "resources": [
         "assets/themes-CEUuST2L.js",
-        "assets/storage-CnoYWep3.js",
-        "assets/constants-DiZ4HZUH.js",
-        "assets/index.ts-DO2GZAEN.js"
+        "assets/storage-CDFuoDun.js",
+        "assets/constants-ByHFNZov.js",
+        "assets/index.ts-D_x9PXId.js"
       ],
       "use_dynamic_url": false
     }

@@ -1,20 +1,20 @@
 {
   "../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-DI_FmmxT.js",
+    "file": "assets/crx-manifest.js-DMQNhLaD.js",
     "name": "crx-manifest.js",
     "src": "../../../../@crx/manifest",
     "isEntry": true
   },
-  "_constants-DiZ4HZUH.js": {
-    "file": "assets/constants-DiZ4HZUH.js",
+  "_constants-ByHFNZov.js": {
+    "file": "assets/constants-ByHFNZov.js",
     "name": "constants"
   },
-  "_index.ts-loader-DVklF-XP.js": {
-    "file": "assets/index.ts-loader-DVklF-XP.js",
-    "src": "_index.ts-loader-DVklF-XP.js"
+  "_index.ts-loader-Dxs-hXRs.js": {
+    "file": "assets/index.ts-loader-Dxs-hXRs.js",
+    "src": "_index.ts-loader-Dxs-hXRs.js"
   },
-  "_storage-CnoYWep3.js": {
-    "file": "assets/storage-CnoYWep3.js",
+  "_storage-CDFuoDun.js": {
+    "file": "assets/storage-CDFuoDun.js",
     "name": "storage"
   },
   "_themes-CEUuST2L.js": {
@@ -22,37 +22,37 @@
     "name": "themes"
   },
   "index.html": {
-    "file": "assets/index.html-Cub8AVu3.js",
+    "file": "assets/index.html-Brgy8wDf.js",
     "name": "index.html",
     "src": "index.html",
     "isEntry": true,
     "imports": [
       "_themes-CEUuST2L.js",
-      "_storage-CnoYWep3.js"
+      "_storage-CDFuoDun.js"
     ],
     "css": [
       "assets/index-B9_BaxxE.css"
     ]
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-CS9Qhh8D.js",
+    "file": "assets/index.ts-BSxb7AUM.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true,
     "imports": [
-      "_constants-DiZ4HZUH.js",
-      "_storage-CnoYWep3.js"
+      "_constants-ByHFNZov.js",
+      "_storage-CDFuoDun.js"
     ]
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-DO2GZAEN.js",
+    "file": "assets/index.ts-D_x9PXId.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,
     "imports": [
       "_themes-CEUuST2L.js",
-      "_storage-CnoYWep3.js",
-      "_constants-DiZ4HZUH.js"
+      "_storage-CDFuoDun.js",
+      "_constants-ByHFNZov.js"
     ]
   }
 }

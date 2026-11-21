@@ -31,6 +31,10 @@ export const MESSAGES = {
   POPUP_ALLOW_OPEN: "TRG_POPUP_ALLOW_OPEN",
   /** Content script vừa chặn một click — không có vé cho tab mới nào. */
   POPUP_BLOCKED: "TRG_POPUP_BLOCKED",
+  /** Shield ở MAIN world xin danh sách domain bị chặn (postMessage trong trang). */
+  BLOCKLIST_REQUEST: "TRG_BLOCKLIST_REQUEST",
+  /** Isolated world đẩy danh sách sang MAIN world (postMessage trong trang). */
+  BLOCKLIST_PUSH: "TRG_BLOCKLIST_PUSH",
 } as const;
 
 export const CONTEXT_MENU = {
@@ -50,3 +54,11 @@ export const POPUP_TICKET_TTL = 1200;
 
 /** Thời gian hiện thông báo đã chặn (ms). */
 export const POPUP_TOAST_TTL = 3000;
+
+/** Id của luật declarativeNetRequest chặn domain. Một luật duy nhất, `requestDomains`
+ *  nhận cả danh sách, nên chỉ cần thay luật này mỗi lần người dùng sửa danh sách. */
+export const DNR_BLOCK_RULE_ID = 1;
+
+/** Sau khi chặn một lần điều hướng, chỉ khôi phục lại trang cũ nhiều nhất
+ *  một lần trong khoảng này (ms) — tránh vòng lặp reload nếu trang cứ nhảy. */
+export const RESTORE_COOLDOWN = 10_000;

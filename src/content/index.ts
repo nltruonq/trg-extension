@@ -17,7 +17,7 @@ import type { Settings } from "../shared/types";
 import { applyBlur, clearBlur } from "./blur";
 import { applyDecor, clearDecor } from "./decorate";
 import { removeElements } from "./blocker";
-import { installPopupGuard, setPopupGuardConfig } from "./popup-guard";
+import { installPopupGuard, setBlockedDomains, setPopupGuardConfig } from "./popup-guard";
 import { registerContextMenuBridge } from "./context-menu";
 
 const host = location.hostname;
@@ -34,6 +34,8 @@ let syncScheduled = false;
 
 function sync(): void {
   const domainOn = isDomainEnabled(settings.enabledDomains, host);
+  // Danh sách domain là toàn cục: chặn cả khi extension bị tắt ở site này.
+  setBlockedDomains(settings.blockedDomains);
   // Chặn click là can thiệp mạnh nên phải bật tường minh theo domain.
   setPopupGuardConfig(
     domainOn && isDomainOptedIn(settings.popupGuardMap, host) ? popupRules : null,
